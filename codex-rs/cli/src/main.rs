@@ -38,6 +38,7 @@ use supports_color::Stream;
 mod app_cmd;
 #[cfg(target_os = "macos")]
 mod desktop_app;
+mod fork_defaults;
 mod mcp_cmd;
 #[cfg(not(windows))]
 mod wsl_paths;
@@ -600,6 +601,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
     let toggle_overrides = feature_toggles.to_overrides()?;
     root_config_overrides.raw_overrides.extend(toggle_overrides);
     let root_remote = remote.remote;
+    fork_defaults::apply_local_fork_defaults_to_tui(&mut interactive);
 
     match subcommand {
         None => {
@@ -613,6 +615,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
         }
         Some(Subcommand::Exec(mut exec_cli)) => {
             reject_remote_mode_for_subcommand(root_remote.as_deref(), "exec")?;
+            fork_defaults::apply_local_fork_defaults_to_exec(&mut exec_cli);
             prepend_config_flags(
                 &mut exec_cli.config_overrides,
                 root_config_overrides.clone(),
@@ -623,6 +626,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
             reject_remote_mode_for_subcommand(root_remote.as_deref(), "review")?;
             let mut exec_cli = ExecCli::try_parse_from(["codex", "exec"])?;
             exec_cli.command = Some(ExecCommand::Review(review_args));
+            fork_defaults::apply_local_fork_defaults_to_exec(&mut exec_cli);
             prepend_config_flags(
                 &mut exec_cli.config_overrides,
                 root_config_overrides.clone(),
